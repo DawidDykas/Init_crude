@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: initCrude
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: jinja2>=3.1.6
+Requires-Dist: questionary>=2.1.1
+Dynamic: license-file
+
+# Init_crude
+Template for CRUDE

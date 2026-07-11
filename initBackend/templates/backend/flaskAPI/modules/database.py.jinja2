@@ -1,0 +1,147 @@
+from sqlalchemy.orm import DeclarativeBase
+from config.setting import database_settings
+
+
+{% if database.async %}
+
+from typing import AsyncIterator
+
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+)
+
+
+SessionType = AsyncSession
+
+
+def get_engine(url: str):
+
+    return create_async_engine(
+        url,
+        echo=False,
+        future=True
+    )
+
+
+def get_sessionmaker(engine):
+
+    return async_sessionmaker(
+        bind=engine,
+        autoflush=False,
+        expire_on_commit=False
+    )
+
+
+{% else %}
+
+from typing import Iterator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import (
+    sessionmaker,
+    Session,
+)
+
+
+SessionType = Session
+
+
+def get_engine(url: str):
+
+    return create_engine(
+        url,
+        echo=False,
+        future=True
+    )
+
+
+def get_sessionmaker(engine):
+
+    return sessionmaker(
+        bind=engine,
+        autoflush=False,
+        expire_on_commit=False
+    )
+
+
+{% endif %}
+
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+
+{% if database.async %}
+
+async def init_db(engine):
+
+    async with engine.begin() as conn:
+        await conn.run_sync(
+            Base.metadata.create_all
+        )
+
+
+{% else %}
+
+def init_db(engine):
+
+    Base.metadata.create_all(
+        engine
+    )
+
+
+{% endif %}
+
+
+
+engine = get_engine(
+    url=database_settings.url_database
+)
+
+
+SessionLocal = get_sessionmaker(
+    engine=engine
+)
+
+
+
+{% if database.async %}
+
+async def get_db() -> AsyncIterator[SessionType]:
+
+    async with SessionLocal() as session:
+
+        async with session.begin():
+
+            try:
+                yield session
+
+            except Exception:
+                await session.rollback()
+                raise
+
+
+{% else %}
+
+from typing import Iterator
+
+
+def get_db() -> Iterator[SessionType]:
+
+    with SessionLocal() as session:
+
+        with session.begin():
+
+            try:
+                yield session
+
+            except Exception:
+                session.rollback()
+                raise
+
+
+{% endif %}

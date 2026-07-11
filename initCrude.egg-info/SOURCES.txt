@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+initBackend/cli.py
+initBackend/generator.py
+initCrude.egg-info/PKG-INFO
+initCrude.egg-info/SOURCES.txt
+initCrude.egg-info/dependency_links.txt
+initCrude.egg-info/entry_points.txt
+initCrude.egg-info/requires.txt
+initCrude.egg-info/top_level.txt

@@ -1,0 +1,81 @@
+from flask import request
+from typing import Dict, Any
+
+from {{ api }}API.security.jwt_auth import verify_token
+from log_config.logger_config import logger
+from {{ api }}API.exceptions.service_exception import ServiceException
+
+
+
+{% if database.async %}
+
+async def get_current_user() -> Dict[str, Any]:
+
+{% else %}
+
+def get_current_user() -> Dict[str, Any]:
+
+{% endif %}
+
+
+    """
+    Flask JWT authentication wrapper.
+
+    Returns:
+        JWT payload with user data.
+
+    Raises:
+        ServiceException:
+            When token is missing or invalid.
+    """
+
+
+    authorization = request.headers.get(
+        "Authorization"
+    )
+
+
+    if not authorization or not authorization.startswith(
+        "Bearer "
+    ):
+
+        logger.warning(
+            "Missing or invalid Authorization header"
+        )
+
+        raise ServiceException(
+            status_code=401,
+            detail="Invalid authentication credentials"
+        )
+
+
+    token = authorization.split(
+        " ",
+        1
+    )[1]
+
+
+    payload = verify_token(
+        token
+    )
+
+
+    if not payload:
+
+        logger.warning(
+            "Invalid or expired token"
+        )
+
+
+        raise ServiceException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+
+    logger.info(
+        f"User authenticated: {payload.get('email', 'unknown')}"
+    )
+
+
+    return payload

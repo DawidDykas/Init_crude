@@ -1,0 +1,159 @@
+from flask import Blueprint, request, jsonify
+from {{ api }}API.schemas.user_schemas import *
+from {{ api }}API.services.user_servicesSync import UserServices
+from log_config.logger_config import logger
+from {{ api }}API.utils.auth_wrapper import get_current_user
+from {{ api }}API.modules.database import get_db
+from sqlalchemy.orm import Session
+
+
+user_router = Blueprint(
+    "users",
+    __name__,
+    url_prefix="/users"
+)
+
+
+@user_router.post("/create/")
+def create_user():
+
+    data = UserCreate(**request.json)
+
+    session: Session = next(get_db())
+
+    logger.info("Create user in database")
+
+    result = UserServices.user_create(
+        data,
+        session
+    )
+
+    return jsonify(
+        result.model_dump()
+    ), 201
+
+
+
+@user_router.post("/login/")
+def login_user():
+
+    data = UserLogin(**request.json)
+
+    session: Session = next(get_db())
+
+    logger.info(
+        f"Login user: {data}"
+    )
+
+    token = UserServices.login(
+        data,
+        session
+    )
+
+    return jsonify(token)
+
+
+
+@user_router.post("/refresh")
+def refresh_token():
+
+    refresh_token = request.json.get(
+        "refresh_token"
+    )
+
+    logger.info(
+        "Refresh access token"
+    )
+
+    return jsonify(
+        UserServices.refresh_token(
+            refresh_token
+        )
+    )
+
+
+
+@user_router.get("/by-id/<int:id>")
+def get_user_by_id(id: int):
+
+    current_user = get_current_user()
+
+    session: Session = next(get_db())
+
+    logger.info(
+        f"Getting user with id: {id}"
+    )
+
+    data = UserGetById(
+        id=id
+    )
+
+    result = UserServices.user_get_by_id(
+        data,
+        session
+    )
+
+    return jsonify(
+        result.model_dump()
+    )
+
+
+
+@user_router.get("/by-email")
+def get_user_by_email():
+
+    email = request.args.get(
+        "email"
+    )
+
+    current_user = get_current_user()
+
+    session: Session = next(get_db())
+
+    logger.info(
+        f"Getting user with email: {email}"
+    )
+
+    data = UserGetByEmail(
+        email=email
+    )
+
+    result = UserServices.user_get_by_email(
+        data,
+        session
+    )
+
+    return jsonify(
+        result.model_dump()
+    )
+
+@user_router.route("/")
+def home():
+    return {
+        "status": "ok",
+        "message": "Flask API running"
+    }
+
+@user_router.post("/update")
+def user_update():
+
+    data = UserUpdate(
+        **request.json
+    )
+
+    current_user = get_current_user()
+
+    session: Session = next(get_db())
+
+    logger.info(
+        f"Update user with email: {data.email}"
+    )
+
+    result = UserServices.user_update(
+        data,
+        session
+    )
+
+    return jsonify(
+        result.model_dump()
+    )

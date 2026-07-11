@@ -1,0 +1,64 @@
+from fastapi import FastAPI, APIRouter, status, HTTPException, Header, Query, Depends
+from {{ api }}API.schemas.user_schemas import * 
+from {{ api }}API.services.user_servicesSync import UserServices
+from log_config.logger_config import logger
+from pydantic import EmailStr
+from {{ api }}API.utils.auth_wrapper import get_current_user
+from {{ api }}API.modules.database import get_db
+from typing import Dict, Any
+from sqlalchemy.orm import Session
+
+
+user_router = APIRouter(prefix="/users", tags=["Users"])
+
+
+
+
+@user_router.post("/create/", response_model= UserResponse)
+def create_user(data: UserCreate, session: Session = Depends(get_db)):
+    logger.info("Create user in database")
+    return  UserServices.user_create(data, session)
+
+
+@user_router.post("/login/", response_model = dict[str, str])
+def login_user(data: UserLogin, session: Session = Depends(get_db)):
+    logger.info(f"Login user :{data}")
+    return  UserServices.login(data, session)
+
+
+@user_router.post("/refresh")
+def refresh_token(refresh_token: str):
+    logger.info(f"Refresh access token")
+    return UserServices.refresh_token(refresh_token)
+
+
+@user_router.get("/by-id/{id}", response_model=UserResponse)
+def get_user_by_id(
+    id: int,
+    session: Session  = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    logger.info(f"Getting user with id: {id}")
+    data = UserGetById(id=id)
+    return  UserServices.user_get_by_id(data, session)
+
+
+@user_router.get("/by-email", response_model=UserResponse)
+def get_user_by_email(
+    email: EmailStr = Query(...),
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    logger.info(f"Getting user with email: {email}")
+    data = UserGetByEmail(email=email)
+    return  UserServices.user_get_by_email(data, session)
+
+
+@user_router.post("/update", response_model=UserResponse)
+def user_update(
+    data: UserUpdate,
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    logger.info(f"Update user with email: {data.email}")
+    return  UserServices.user_update(data, session)
