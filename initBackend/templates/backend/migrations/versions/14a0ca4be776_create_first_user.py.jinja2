@@ -10,9 +10,9 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.orm import Session  
-from {{ api }}API.modules.tables import User
+from api.modules.tables import User
 from datetime import datetime
-from {{ api }}API.security.jwt_auth import hash_password
+from api.security.jwt_auth import hash_password
 
 # revision identifiers, used by Alembic.
 revision: str = '14a0ca4be776'

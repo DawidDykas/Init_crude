@@ -12,7 +12,7 @@ console_handler.setFormatter(console_formatter)
 logger.addHandler(console_handler)
 
 
-file_handler = RotatingFileHandler("{{ api }}API.log", maxBytes=5*1024*1024, backupCount=3)
+file_handler = RotatingFileHandler("api.log", maxBytes=5*1024*1024, backupCount=3)
 file_handler.setLevel(logging.DEBUG)  # zapisujemy wszystko do pliku
 file_formatter = logging.Formatter('%(asctime)s [%(levelname)s] [%(name)s] %(message)s')
 file_handler.setFormatter(file_formatter)

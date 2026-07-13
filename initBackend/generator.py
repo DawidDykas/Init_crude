@@ -22,28 +22,7 @@ env = Environment(
 
 def filter_files(files, config):
 
-    api = config["api"].lower()
     database = config["database"]
-
-    print(api)
-
-
-    # -----------------------------
-    # API FILTER
-    # -----------------------------
-    if api == "flask":
-        files = [
-            file for file in files
-            if "fastapi" not in str(file).lower()
-        ]
-
-
-    elif api == "fastapi":
-        files = [
-            file for file in files
-            if "flask" not in str(file).lower()
-        ]
-
     # -----------------------------
     # DATABASE FILTER
     # -----------------------------
@@ -85,8 +64,6 @@ def generate_project(config: dict):
 
 
     context = {
-        "api": config["api"].lower(),
-
         "database": {
             "async": config["database"] == "Async"
         }
@@ -214,4 +191,4 @@ def generate_project(config: dict):
 
         print(
             f"Generated: {output_file}"
-        )
+        ) 

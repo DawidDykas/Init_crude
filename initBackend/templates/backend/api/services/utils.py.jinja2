@@ -1,0 +1,30 @@
+import asyncio
+from functools import wraps
+from api.modules.database import sessionmaker
+from log_config.logger_config import logger
+
+
+{% if database.async %}
+
+def with_session(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        async with sessionmaker() as session:
+            async with session.begin():
+                return await func(session, *args, **kwargs)
+
+    return wrapper
+
+
+{% else %}
+
+def with_session(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with sessionmaker() as session:
+            with session.begin():
+                return func(session, *args, **kwargs)
+
+    return wrapper
+
+{% endif %}

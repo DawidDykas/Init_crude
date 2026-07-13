@@ -1,0 +1,61 @@
+from fastapi import HTTPException, Depends
+from typing import Dict, Any
+from api.security.jwt_auth import verify_token
+from log_config.logger_config import logger
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
+
+{% if database.async %}
+
+async def get_current_user(
+
+{% else %}
+
+def get_current_user(
+
+{% endif %}
+
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+
+) -> Dict[str, Any]:
+    """
+    Dependency do weryfikacji tokenu JWT.
+    Pobiera token Bearer z nagłówka Authorization
+    i zwraca payload JWT z danymi użytkownika.
+
+    Raises:
+        HTTPException: Jeśli token jest nieprawidłowy lub wygasł.
+    """
+
+    if credentials.scheme.lower() != "bearer":
+        logger.warning("Invalid authentication scheme")
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+    token = credentials.credentials
+
+    payload = verify_token(token)
+
+
+    if not payload:
+        logger.warning("Invalid or expired token")
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+    logger.info(
+        f"User authenticated: {payload.get('email', 'unknown')}"
+    )
+
+    return payload
