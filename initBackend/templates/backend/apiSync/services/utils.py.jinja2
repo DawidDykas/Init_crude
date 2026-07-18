@@ -1,0 +1,14 @@
+import asyncio
+from functools import wraps
+from apiSync.modules.database import sessionmaker
+from log_config.logger_config import logger
+
+
+def with_session(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with sessionmaker() as session:
+            with session.begin():
+                return func(session, *args, **kwargs)
+
+    return wrapper

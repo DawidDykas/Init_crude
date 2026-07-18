@@ -1,0 +1,292 @@
+from fastapi import FastAPI, APIRouter, status, HTTPException, Header, Query, Depends
+from apiSync.schemas.user_schemas import BaseUser, UserCreate, UserLogin, UserResponse, UserUpdate, UserDelete, UserGetById, UserGetByEmail
+from apiSync.services.user_servicesSync import UserServices
+from log_config.logger_config import logger
+from pydantic import EmailStr
+from apiSync.utils.auth_wrapper import get_current_user
+from apiSync.modules.database import get_db
+from typing import Dict, Any
+from sqlalchemy.orm import Session
+
+
+user_router = APIRouter(
+    prefix="/users",
+    tags=["Users"]
+)
+
+
+@user_router.post(
+    "/create/",
+    response_model=UserResponse,
+    summary="Create new user",
+    description="""
+Creates a new user account.
+
+Input:
+- username: unique username of the user
+- email: unique email address
+- password: plain text password which is hashed before saving
+
+Output:
+- Created user object containing:
+    - id
+    - username
+    - email
+    - registration date
+
+Possible errors:
+- 409: Email already exists
+"""
+)
+def create_user(data: UserCreate, session: Session = Depends(get_db)):
+    """
+    Creates a new user in the database.
+    """
+    logger.debug("Create user in database")
+    return UserServices.user_create(
+        data=data,
+        session=session
+    )
+
+
+@user_router.post(
+    "/login/",
+    response_model=dict[str, Any],
+    summary="User authentication",
+    description="""
+Authenticates user using email and password.
+
+Input:
+- email: registered user email
+- password: user password
+
+Output:
+- User information
+- Access token (JWT)
+- Refresh token (JWT)
+
+Possible errors:
+- 401: Invalid credentials
+"""
+)
+def login_user(data: UserLogin, session: Session = Depends(get_db)):
+    """
+    Authenticates user and generates JWT tokens.
+    """
+    logger.debug(f"Login user :{data}")
+    return UserServices.login(
+        data,
+        session
+    )
+
+
+@user_router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get current user profile",
+    description="""
+Returns information about currently authenticated user.
+
+Authentication:
+- Requires valid JWT access token in Authorization header.
+
+Input:
+- JWT token from request header
+
+Output:
+- Current user data:
+    - id
+    - username
+    - email
+    - registration date
+
+The user ID is extracted automatically from the token.
+"""
+)
+def get_current_user_data(
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Returns data of authenticated user.
+    """
+    logger.debug(
+        f"Getting current user data for id: {current_user['id']}"
+    )
+
+    data = UserGetById(
+        id=current_user["id"]
+    )
+
+    return UserServices.user_get_by_id(
+        data=data,
+        current_user=current_user,
+        session=session
+    )
+
+
+@user_router.post(
+    "/refresh",
+    summary="Refresh access token",
+    description="""
+Generates a new access token using a valid refresh token.
+
+Input:
+- refresh_token: valid JWT refresh token
+
+Output:
+- New access token
+
+Possible errors:
+- 401: Invalid refresh token
+- 401: Expired refresh token
+- 401: Invalid token type
+"""
+)
+def refresh_token(
+    refresh_token: str,
+    session: Session = Depends(get_db)
+):
+    """
+    Creates a new access token.
+    """
+    logger.debug("Refresh access token")
+
+    return UserServices.refresh_token(
+        refresh_token=refresh_token,
+        session=session
+    )
+
+
+@user_router.get(
+    "/by-email",
+    response_model=UserResponse,
+    summary="Get user by email",
+    description="""
+Returns user information based on email address.
+
+Authentication:
+- Requires valid JWT access token.
+
+Input:
+- email: email address of requested user
+
+Output:
+- User object:
+    - id
+    - username
+    - email
+    - registration date
+
+Security:
+- User can only access their own account.
+"""
+)
+def get_user_by_email(
+    email: EmailStr = Query(...),
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Fetches authenticated user's data by email.
+    """
+    logger.debug(f"Getting user with email: {email}")
+
+    data = UserGetByEmail(
+        email=email
+    )
+
+    return UserServices.user_get_by_email(
+        data=data,
+        current_user=current_user,
+        session=session
+    )
+
+
+@user_router.post(
+    "/update",
+    response_model=UserResponse,
+    summary="Update user profile",
+    description="""
+Updates existing user information.
+
+Authentication:
+- Requires valid JWT access token.
+
+Input:
+- User update data:
+    - username
+    - email
+    - password
+
+Output:
+- Updated user object.
+
+Security:
+- User can update only their own account.
+
+Possible errors:
+- 403: Attempt to modify another user
+- 404: User not found
+"""
+)
+def user_update(
+    data: UserUpdate,
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Updates authenticated user's data.
+    """
+    logger.debug(
+        f"Update user with email: {data.email}"
+    )
+
+    return UserServices.user_update(
+        data=data,
+        current_user=current_user,
+        session=session
+    )
+
+
+@user_router.delete(
+    "/delete",
+    response_model=UserResponse,
+    summary="Delete user account",
+    description="""
+Deletes user account permanently.
+
+Authentication:
+- Requires valid JWT access token.
+
+Input:
+- User ID to delete.
+
+Output:
+- Deleted user object.
+
+Security:
+- User can delete only their own account.
+
+Possible errors:
+- 403: Attempt to delete another user
+- 404: User not found
+"""
+)
+def user_delete(
+    data: UserDelete,
+    session: Session = Depends(get_db),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Removes authenticated user's account.
+    """
+    logger.debug(
+        f"Delete user with id: {data.id}"
+    )
+
+    return UserServices.user_delete(
+        data=data,
+        current_user=current_user,
+        session=session
+    )

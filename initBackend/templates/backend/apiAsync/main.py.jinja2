@@ -1,0 +1,26 @@
+import asyncio
+from apiAsync.routers.user_routersAsync import user_router
+
+from fastapi import FastAPI
+from log_config.logger_config import logger
+
+
+# =========================
+# FastAPI app
+# =========================
+
+app = FastAPI(
+    title="Parking Manager API"
+)
+app.include_router(user_router)
+
+
+
+# =========================
+# Run server
+# =========================
+from apiAsync.run_all import run_all
+
+if __name__ == "__main__":
+    logger.info("Starting server...")
+    asyncio.run(run_all())

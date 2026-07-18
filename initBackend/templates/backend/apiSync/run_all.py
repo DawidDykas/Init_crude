@@ -1,0 +1,82 @@
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+from sqlalchemy.exc import OperationalError
+from config.setting import api_settings, database_settings
+
+
+def run_tests():
+    project_root = Path(__file__).resolve().parents[1]
+    tests_dir = project_root / "apiSync" / "tests"
+
+    try: 
+        subprocess.run(
+            [
+                "alembic",
+                "-x",
+                f"db_url={database_settings.url_database_test}",
+                "upgrade",
+                "head"
+            ],
+            check=True
+        )
+    except subprocess.CalledProcessError:
+        print("Test database is existing")
+
+        
+    if not tests_dir.exists():
+        print("No FastAPI tests found, skipping tests.")
+        return
+
+    print("Running FastAPI tests before startup...")
+    
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", str(tests_dir)],
+        cwd=project_root,
+        check=False,
+    )
+
+    if result.returncode != 0:
+        print("FastAPI tests failed, but startup will continue.")
+
+
+def init_db():
+    try:
+        subprocess.run(["alembic", "upgrade", "head"], check=True)
+    except subprocess.CalledProcessError:
+        print("Database is existing")
+
+def start_api():
+
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "apiSync.main:app",
+            "--reload",
+            "--host",
+            api_settings.HOST,
+            "--port",
+            str(api_settings.PORT),
+        ]
+    )
+
+
+def run_all():
+    init_db()
+    run_tests()
+
+    api_process = start_api()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+    
+        print("Shutting down processes...")
+        api_process.terminate()
+        api_process.wait()
+        print("Processes terminated.")

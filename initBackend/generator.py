@@ -8,8 +8,8 @@ from pathlib import Path
 
 workpath = Path(__file__).resolve().parent
 
-template_path = workpath / "templates"
-
+template_path = Path(workpath / "templates")
+print(f"Template path: {template_path}")
 env = Environment(
     loader=FileSystemLoader(str(template_path))
 )
@@ -64,6 +64,7 @@ def generate_project(config: dict):
 
 
     context = {
+        "package": config["database"],
         "database": {
             "async": config["database"] == "Async"
         }
@@ -71,8 +72,7 @@ def generate_project(config: dict):
 
 
 
-    source_dir = template_path / "backend"
-
+    source_dir = Path(template_path / "backend")
     output_dir = Path("backend")
 
 
@@ -129,14 +129,11 @@ def generate_project(config: dict):
 
         if relative_path.suffix == ".jinja2":
 
-            output_file = (
-                output_dir /
-                relative_path.with_suffix("")
-            )
+            output_file = Path(output_dir / relative_path.with_suffix(""))
 
         else:
 
-            output_file = (
+            output_file = Path(
                 output_dir /
                 relative_path
             )
@@ -154,14 +151,13 @@ def generate_project(config: dict):
         # Load template
         # ----------------------------------------------
 
-        template_name = str(
-            file_path.relative_to(template_path)
+        template_name = (
+            file_path
+            .relative_to(template_path)
+            .as_posix()
         )
 
-
-        template = env.get_template(
-            template_name
-        )
+        template = env.get_template(template_name)
 
 
 

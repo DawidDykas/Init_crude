@@ -5,6 +5,7 @@ from pathlib import Path
 
 class DatabaseSettings(BaseSettings):
     url_database: str 
+    url_database_test: str 
 
     model_config = SettingsConfigDict(
         env_file = Path(__file__).resolve().parent.parent / ".env",
@@ -40,4 +41,3 @@ class APISettings(BaseSettings):
 database_settings = DatabaseSettings()
 api_settings = APISettings()
 security_settings = SecuritySettings()
-

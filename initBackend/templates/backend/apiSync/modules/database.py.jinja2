@@ -1,0 +1,89 @@
+from sqlalchemy.orm import DeclarativeBase
+from config.setting import database_settings
+
+from typing import Iterator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import (
+    sessionmaker,
+    Session,
+)
+
+from typing import Iterator
+
+
+def get_engine(url: str):
+
+    return create_engine(
+        url,
+        echo=False,
+        future=True
+    )
+
+
+def get_sessionmaker(engine):
+
+    return sessionmaker(
+        bind=engine,
+        autoflush=False,
+        expire_on_commit=False
+    )
+
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+
+def init_db(engine):
+
+    Base.metadata.create_all(
+        engine
+    )
+
+
+# Real Base and SessionLocal for the application
+engine = get_engine(
+    url=database_settings.url_database
+)
+
+SessionLocal = get_sessionmaker(
+    engine=engine
+)
+
+
+def get_db() -> Iterator[Session]:
+
+    with SessionLocal() as session:
+
+        with session.begin():
+
+            try:
+                yield session
+
+            except Exception:
+                session.rollback()
+                raise
+
+
+
+# Test base engine and sessionmaker
+test_engine = get_engine(
+    url=database_settings.url_database_test
+)
+TestSessionLocal = get_sessionmaker(
+    engine=test_engine
+)
+
+def get_dbTEST() -> Iterator[Session]:
+
+    with TestSessionLocal() as session:
+
+        with session.begin():
+
+            try:
+                yield session
+
+            except Exception:
+                session.rollback()
+                raise

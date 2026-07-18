@@ -1,0 +1,28 @@
+from apiSync.routers.user_routersSync import user_router
+from fastapi import FastAPI
+from log_config.logger_config import logger
+
+
+# =========================
+# FastAPI app
+# =========================
+
+app = FastAPI(
+    title="Parking Manager API"
+)
+
+app.include_router(user_router)
+
+
+
+# =========================
+# Run server
+# =========================
+
+
+from apiSync.run_all import run_all
+
+
+logger.debug("Starting FastAPI server...")
+if __name__ == "__main__":
+    run_all()

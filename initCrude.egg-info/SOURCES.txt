@@ -3,6 +3,9 @@ README.md
 pyproject.toml
 initBackend/cli.py
 initBackend/generator.py
+initBackend/templates/backend/apiAsync/tests/unit_tests/testServices.py
+initBackend/templates/backend/apiSync/run_all.py
+initBackend/templates/backend/apiSync/tests/unit_tests/testServices.py
 initCrude.egg-info/PKG-INFO
 initCrude.egg-info/SOURCES.txt
 initCrude.egg-info/dependency_links.txt
