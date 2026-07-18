@@ -24,7 +24,7 @@ Depending on the selected mode, the generator creates, among others:
 
 ## 📦 Requirements
 
-- Python `>= 3.13`
+- Python `>= 3.12`
 - `pip`
 
 ---
