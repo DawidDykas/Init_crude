@@ -108,7 +108,7 @@ After generation, run the backend in your new project:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn api.main:app --reload ~or~ python -m apiSync/apiAsync.main
+uvicorn api.main:app --reload `or` python -m apiSync/apiAsync.main
 ```
 
 ---
