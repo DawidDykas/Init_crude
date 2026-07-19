@@ -162,7 +162,6 @@ class ForgotPasswordRequest(BaseModel):
     )
 
 
-
 # ------------------------
 # Auth Models
 # ------------------------

@@ -13,6 +13,9 @@ from sqlalchemy.orm import Session
 from api{{package}}.modules.tables import User
 from datetime import datetime
 from api{{package}}.security.jwt_auth import hash_password
+from datetime import datetime, UTC
+
+
 
 # revision identifiers, used by Alembic.
 revision: str = '14a0ca4be776'
@@ -28,7 +31,7 @@ def upgrade():
         username="admin",
         email="admin@example.com",
         password=hash_password(password= "hashed_passworSuperSecure123d"),
-        registration_date=datetime.utcnow()
+        registration_date=datetime.now(UTC)
     )
 
     session.add(admin)

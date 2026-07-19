@@ -8,10 +8,20 @@ from security.security import hash_password
 from apiAsync.modules.tables import User
 
 
+
+
 user = UserResponse(
     id=1,
     username="testuser",
     email="testuser@example.com",
+    registration_date="2023-01-01T00:00:00"
+)
+
+user_ = User(
+    id=1,
+    username="testuser",
+    email="testuser@example.com",
+    password=hash_password("testpassword"),
     registration_date="2023-01-01T00:00:00"
 )
 
@@ -119,19 +129,10 @@ async def test_user_delete():
 async def test_login():
     user_data = UserLogin(
         email="testuser@example.com",
-        password="testpassword"
-    )
-
-    user_ = User(
-        id=1,
-        username="testuser",
-        email="testuser@example.com",
-        password=hash_password("testpassword"),
-        registration_date="2023-01-01T00:00:00"
-    )
+        password="testpassword")
 
     with patch.object(UserRepository, "get_by_email", new_callable=AsyncMock) as mock_get_by_email, \
-         patch("apiSync.services.user_services.verify_password") as mock_verify_password:
+         patch("apiAsync.services.user_services.verify_password", new_callable=AsyncMock) as mock_verify_password:
 
         mock_get_by_email.return_value = user_
         mock_verify_password.return_value = True
@@ -143,3 +144,16 @@ async def test_login():
     assert isinstance(result["refresh_token"], str)
     assert result["access_token"]
     assert result["refresh_token"]
+
+
+@pytest.mark.asyncio
+async def test_forgot_password():
+    user_data = ForgotPasswordRequest(
+        email="testuser@example.com"
+    )
+
+    with patch.object(UserRepository, "get_by_email", new_callable=AsyncMock) as mock_get_by_email:
+        mock_get_by_email.return_value = user_
+        result = await UserServices.forgot_password(user_data, session=None)
+
+    assert result is True

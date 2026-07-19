@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, status, HTTPException, Header, Query, Depends
-from apiSync.schemas.user_schemas import BaseUser, UserCreate, UserLogin, UserResponse, UserUpdate, UserDelete, UserGetById, UserGetByEmail
+from apiSync.schemas.user_schemas import *
 from apiSync.services.user_services import UserServices
 from log_config.logger_config import logger
 from pydantic import EmailStr
@@ -290,3 +290,31 @@ def user_delete(
         current_user=current_user,
         session=session
     )
+
+
+
+
+
+@user_router.post(
+    "/forgotPassword/",
+    response_model = bool,
+    summary="User forgot password",
+    description="""
+Allows user to reset their password.
+
+Input:
+- email: registered user email
+
+Output:
+- Boolean indicating if password reset email was sent.
+
+Possible errors:
+- 404: Email not found
+"""
+)
+def forgot_password(data: ForgotPasswordRequest, session: Session = Depends(get_db)):
+    """
+    Allows user to reset their password.
+    """
+    logger.debug(f"Forgot password for email: {data.email}")
+    return UserServices.forgot_password(data, session)

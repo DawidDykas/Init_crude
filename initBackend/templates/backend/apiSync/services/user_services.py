@@ -1,7 +1,7 @@
 from apiSync.repositories.user_repo import UserRepository
 from sqlalchemy.orm import Session
 
-from apiSync.schemas.user_schemas import UserCreate, UserLogin, UserResponse, UserUpdate, UserDelete, UserGetById, UserGetByEmail
+from apiSync.schemas.user_schemas import ForgotPasswordRequest, UserCreate, UserLogin, UserResponse, UserUpdate, UserDelete, UserGetById, UserGetByEmail
 from log_config.logger_config import logger
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
@@ -9,7 +9,7 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 from apiSync.security.security import hash_password, verify_password
 from apiSync.security.jwt_auth import create_access_token, verify_token, create_refresh_token
-
+from datetime import datetime, UTC
 
 
 class UserServices: 
@@ -159,7 +159,7 @@ class UserServices:
                 detail="Invalid token type for refresh"
             )
 
-        if payload.get("exp") < datetime.utcnow().timestamp():
+        if payload.get("exp") < datetime.now(UTC).timestamp():
             logger.warning(
                 "Refresh token has expired"
             )
@@ -206,3 +206,25 @@ class UserServices:
         
         logger.debug(f"User deleted successfully: {user.id}")
         return user
+
+
+    @staticmethod
+    def forgot_password(data: ForgotPasswordRequest, session: Session) -> bool:
+        logger.debug(f"Password reset requested for: {data.email}")
+
+        user = UserRepository.get_by_email(
+            session=session,
+            data=UserGetByEmail(email=data.email)
+        )
+
+        if not user:
+            logger.warning(f"Password reset requested for non-existing email: {data.email}")
+            return False
+
+        # TODO:
+        # - generate reset token
+        # - save token to database/cache
+        # - send email with reset link
+
+        logger.info(f"Password reset email queued for: {data.email}")
+        return True

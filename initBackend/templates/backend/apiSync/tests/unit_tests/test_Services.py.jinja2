@@ -13,6 +13,12 @@ user = UserResponse(
     registration_date="2023-01-01T00:00:00"
 )
 
+user_ = User(id = 1,
+            username="testuser",
+            email="testuser@example.com",
+            password=hash_password("testpassword"),
+            registration_date="2023-01-01T00:00:00")
+
 current_user = {
     "id": 1,
     "username": "testuser",
@@ -88,11 +94,7 @@ def test_login():
         password="testpassword"
     )
 
-    user_ = User(id = 1,
-                username="testuser",
-                email="testuser@example.com",
-                password=hash_password("testpassword"),
-                registration_date="2023-01-01T00:00:00")
+
 
     with patch.object(UserRepository, "get_by_email") as mock_get_by_email, \
          patch("apiSync.services.user_services.verify_password") as mock_verify_password:
@@ -105,3 +107,15 @@ def test_login():
     assert result["user"] == user
     assert result["access_token"] is not None
     assert result["refresh_token"] is not None
+
+
+def test_forgot_password():
+    user_data = ForgotPasswordRequest(
+        email="testuser@example.com"
+    )
+
+    with patch.object(UserRepository, "get_by_email") as mock_get_by_email:
+        mock_get_by_email.return_value = user_
+        result = UserServices.forgot_password(user_data, session=None)
+
+    assert result is True

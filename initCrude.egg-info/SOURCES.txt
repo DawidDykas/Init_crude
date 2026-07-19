@@ -3,13 +3,9 @@ README.md
 pyproject.toml
 initBackend/cli.py
 initBackend/generator.py
-initBackend/templates/backend/apiAsync/tests/unit_tests/test_Services.py
-initBackend/templates/backend/apiSync/run_all.py
-initBackend/templates/backend/apiSync/repositories/user_repo.py
+initBackend/templates/backend/apiSync/routers/user_routers.py
 initBackend/templates/backend/apiSync/schemas/user_schemas.py
 initBackend/templates/backend/apiSync/services/user_services.py
-initBackend/templates/backend/apiSync/services/utils.py
-initBackend/templates/backend/apiSync/tests/unit_tests/test_Services.py
 initCrude.egg-info/PKG-INFO
 initCrude.egg-info/SOURCES.txt
 initCrude.egg-info/dependency_links.txt

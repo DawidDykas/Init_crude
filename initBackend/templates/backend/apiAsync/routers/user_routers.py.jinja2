@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from apiAsync.schemas.user_schemas import UserCreate, UserLogin, UserResponse, UserGetById, UserGetByEmail, UserUpdate, UserDelete
+from apiAsync.schemas.user_schemas import *
 from apiAsync.services.user_services import UserServices
 from log_config.logger_config import logger
 from pydantic import EmailStr
@@ -304,3 +304,29 @@ async def user_delete(
         current_user=current_user,
         session=session
     )
+
+
+
+@user_router.post(
+    "/forgotPassword/",
+    response_model = bool,
+    summary="User forgot password",
+    description="""
+Allows user to reset their password.
+
+Input:
+- email: registered user email
+
+Output:
+- Boolean indicating if password reset email was sent.
+
+Possible errors:
+- 404: Email not found
+"""
+)
+async def forgot_password(data: ForgotPasswordRequest, session: AsyncSession = Depends(get_db)):
+    """
+    Allows user to reset their password.
+    """
+    logger.debug(f"Forgot password for email: {data.email}")
+    return await UserServices.forgot_password(data, session)
