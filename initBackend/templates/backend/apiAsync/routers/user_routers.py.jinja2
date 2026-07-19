@@ -1,12 +1,12 @@
-from fastapi import FastAPI, APIRouter, status, HTTPException, Header, Query, Depends
-from apiSync.schemas.user_schemas import BaseUser, UserCreate, UserLogin, UserResponse, UserUpdate, UserDelete, UserGetById, UserGetByEmail
-from apiSync.services.user_servicesSync import UserServices
+from fastapi import APIRouter, Depends, Query
+from apiAsync.schemas.user_schemas import UserCreate, UserLogin, UserResponse, UserGetById, UserGetByEmail, UserUpdate, UserDelete
+from apiAsync.services.user_services import UserServices
 from log_config.logger_config import logger
 from pydantic import EmailStr
-from apiSync.utils.auth_wrapper import get_current_user
-from apiSync.modules.database import get_db
+from apiAsync.utils.auth_wrapper import get_current_user
+from apiAsync.modules.database import get_db
 from typing import Dict, Any
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 user_router = APIRouter(
@@ -20,15 +20,19 @@ user_router = APIRouter(
     response_model=UserResponse,
     summary="Create new user",
     description="""
-Creates a new user account.
+Creates a new user account asynchronously.
 
 Input:
-- username: unique username of the user
+- username: user login name
 - email: unique email address
-- password: plain text password which is hashed before saving
+- password: user password
+
+Processing:
+- Password is hashed before storing.
+- User is saved into database.
 
 Output:
-- Created user object containing:
+- Created user object:
     - id
     - username
     - email
@@ -38,12 +42,16 @@ Possible errors:
 - 409: Email already exists
 """
 )
-def create_user(data: UserCreate, session: Session = Depends(get_db)):
+async def create_user(
+    data: UserCreate,
+    session: AsyncSession = Depends(get_db)
+):
     """
-    Creates a new user in the database.
+    Creates a new user in database.
     """
     logger.debug("Create user in database")
-    return UserServices.user_create(
+
+    return await UserServices.user_create(
         data=data,
         session=session
     )
@@ -52,31 +60,35 @@ def create_user(data: UserCreate, session: Session = Depends(get_db)):
 @user_router.post(
     "/login/",
     response_model=dict[str, Any],
-    summary="User authentication",
+    summary="Authenticate user",
     description="""
 Authenticates user using email and password.
 
 Input:
 - email: registered user email
-- password: user password
+- password: account password
 
 Output:
 - User information
-- Access token (JWT)
-- Refresh token (JWT)
+- JWT access token
+- JWT refresh token
 
 Possible errors:
 - 401: Invalid credentials
 """
 )
-def login_user(data: UserLogin, session: Session = Depends(get_db)):
+async def login_user(
+    data: UserLogin,
+    session: AsyncSession = Depends(get_db)
+):
     """
-    Authenticates user and generates JWT tokens.
+    Authenticates user and creates JWT tokens.
     """
-    logger.debug(f"Login user :{data}")
-    return UserServices.login(
-        data,
-        session
+    logger.debug(f"Login user: {data}")
+
+    return await UserServices.login(
+        data=data,
+        session=session
     )
 
 
@@ -85,30 +97,30 @@ def login_user(data: UserLogin, session: Session = Depends(get_db)):
     response_model=UserResponse,
     summary="Get current user profile",
     description="""
-Returns information about currently authenticated user.
+Returns information about authenticated user.
 
 Authentication:
-- Requires valid JWT access token in Authorization header.
+- Requires JWT access token in Authorization header.
 
 Input:
-- JWT token from request header
+- JWT token
 
 Output:
-- Current user data:
+- Current user:
     - id
     - username
     - email
     - registration date
 
-The user ID is extracted automatically from the token.
+User identity is extracted automatically from token.
 """
 )
-def get_current_user_data(
-    session: Session = Depends(get_db),
+async def get_current_user_data(
+    session: AsyncSession = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Returns data of authenticated user.
+    Returns currently logged user data.
     """
     logger.debug(
         f"Getting current user data for id: {current_user['id']}"
@@ -118,7 +130,7 @@ def get_current_user_data(
         id=current_user["id"]
     )
 
-    return UserServices.user_get_by_id(
+    return await UserServices.user_get_by_id(
         data=data,
         current_user=current_user,
         session=session
@@ -129,7 +141,7 @@ def get_current_user_data(
     "/refresh",
     summary="Refresh access token",
     description="""
-Generates a new access token using a valid refresh token.
+Creates a new access token using refresh token.
 
 Input:
 - refresh_token: valid JWT refresh token
@@ -143,16 +155,16 @@ Possible errors:
 - 401: Invalid token type
 """
 )
-def refresh_token(
+async def refresh_token(
     refresh_token: str,
-    session: Session = Depends(get_db)
+    session: AsyncSession = Depends(get_db)
 ):
     """
-    Creates a new access token.
+    Generates a new JWT access token.
     """
     logger.debug("Refresh access token")
 
-    return UserServices.refresh_token(
+    return await UserServices.refresh_token(
         refresh_token=refresh_token,
         session=session
     )
@@ -163,13 +175,13 @@ def refresh_token(
     response_model=UserResponse,
     summary="Get user by email",
     description="""
-Returns user information based on email address.
+Returns user information based on email.
 
 Authentication:
 - Requires valid JWT access token.
 
 Input:
-- email: email address of requested user
+- email: user email address
 
 Output:
 - User object:
@@ -179,24 +191,26 @@ Output:
     - registration date
 
 Security:
-- User can only access their own account.
+- User can only access own account.
 """
 )
-def get_user_by_email(
+async def get_user_by_email(
     email: EmailStr = Query(...),
-    session: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
     Fetches authenticated user's data by email.
     """
-    logger.debug(f"Getting user with email: {email}")
+    logger.debug(
+        f"Getting user with email: {email}"
+    )
 
     data = UserGetByEmail(
         email=email
     )
 
-    return UserServices.user_get_by_email(
+    return await UserServices.user_get_by_email(
         data=data,
         current_user=current_user,
         session=session
@@ -208,13 +222,13 @@ def get_user_by_email(
     response_model=UserResponse,
     summary="Update user profile",
     description="""
-Updates existing user information.
+Updates authenticated user information.
 
 Authentication:
 - Requires valid JWT access token.
 
 Input:
-- User update data:
+- Updated user data:
     - username
     - email
     - password
@@ -223,26 +237,26 @@ Output:
 - Updated user object.
 
 Security:
-- User can update only their own account.
+- User can update only own account.
 
 Possible errors:
-- 403: Attempt to modify another user
+- 403: Updating another user's account
 - 404: User not found
 """
 )
-def user_update(
+async def user_update(
     data: UserUpdate,
-    session: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Updates authenticated user's data.
+    Updates user information asynchronously.
     """
     logger.debug(
         f"Update user with email: {data.email}"
     )
 
-    return UserServices.user_update(
+    return await UserServices.user_update(
         data=data,
         current_user=current_user,
         session=session
@@ -260,32 +274,32 @@ Authentication:
 - Requires valid JWT access token.
 
 Input:
-- User ID to delete.
+- User ID of account to remove.
 
 Output:
 - Deleted user object.
 
 Security:
-- User can delete only their own account.
+- User can delete only own account.
 
 Possible errors:
-- 403: Attempt to delete another user
+- 403: Deleting another user's account
 - 404: User not found
 """
 )
-def user_delete(
+async def user_delete(
     data: UserDelete,
-    session: Session = Depends(get_db),
+    session: AsyncSession = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Removes authenticated user's account.
+    Removes authenticated user's account asynchronously.
     """
     logger.debug(
         f"Delete user with id: {data.id}"
     )
 
-    return UserServices.user_delete(
+    return await UserServices.user_delete(
         data=data,
         current_user=current_user,
         session=session
