@@ -1,0 +1,107 @@
+from apiSync.services.user_services import UserServices
+from apiSync.schemas.user_schemas import *
+from apiSync.repositories.user_repo import UserRepository
+from unittest.mock import patch
+from security.security import hash_password, verify_password
+from apiSync.modules.tables import User
+# Test cases for UserServices
+
+user = UserResponse(
+    id=1,
+    username="testuser",
+    email="testuser@example.com",
+    registration_date="2023-01-01T00:00:00"
+)
+
+current_user = {
+    "id": 1,
+    "username": "testuser",
+    "email": "testuser@example.com"
+}
+
+# Test user creation
+def test_user_create():
+    user_data = UserCreate(
+        username="testuser",
+        email="testuser@example.com",
+        password="testpassword"
+    )
+
+    with patch.object(UserRepository, 'create') as mock_create:
+        mock_create.return_value = user
+        result = UserServices.user_create(user_data, session=None)
+
+        assert result == user
+
+def test_user_get_by_id(): 
+    user_data = UserGetById(id=1)
+
+    with patch.object(UserRepository, 'get_by_id') as mock_get_by_id:
+        mock_get_by_id.return_value = user
+        result = UserServices.user_get_by_id(user_data, current_user=current_user, session=None)
+
+        assert result == user
+
+def test_user_update():
+    user_data = UserUpdate(
+        id=1,
+        username="updateduser",
+        email="updateduser@example.com"
+    )
+
+    updated_user = UserResponse(
+        id=1,
+        username="updateduser",
+        email="updateduser@example.com",
+        registration_date="2023-01-01T00:00:00"
+    )
+
+    with patch.object(UserRepository, 'update') as mock_update:
+        mock_update.return_value = updated_user
+        result = UserServices.user_update(user_data, current_user=current_user, session=None)
+
+        assert result == updated_user
+
+
+def test_user_get_by_email(): 
+    user_data = UserGetByEmail(email="testuser@example.com")
+
+    with patch.object(UserRepository, 'get_by_email') as mock_get_by_email:
+        mock_get_by_email.return_value = user
+        result = UserServices.user_get_by_email(user_data, current_user=current_user, session=None)
+
+        assert result == user
+
+def test_user_delete(): 
+    user_data = UserDelete(id=1)
+
+    with patch.object(UserRepository, 'delete') as mock_delete:
+        mock_delete.return_value = user
+        result = UserServices.user_delete(user_data, current_user=current_user, session=None)
+
+        assert result == user
+
+
+def test_login():
+    user_data = UserLogin(
+        email="testuser@example.com",
+        password="testpassword"
+    )
+
+    user_ = User(id = 1,
+                username="testuser",
+                email="testuser@example.com",
+                password=hash_password("testpassword"),
+                registration_date="2023-01-01T00:00:00")
+
+    with patch.object(UserRepository, "get_by_email") as mock_get_by_email, \
+         patch("apiSync.services.user_services.verify_password") as mock_verify_password:
+
+        mock_get_by_email.return_value = user_
+        mock_verify_password.return_value = True
+
+        result = UserServices.login(user_data, session=None)
+
+    assert result["user"] == user
+    assert result["access_token"] is not None
+    assert result["refresh_token"] is not None
