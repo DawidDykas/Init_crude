@@ -73,6 +73,9 @@ initBackend/
         ├── config/        # Configuration
         ├── databases/     # Databases
         ├── log_config/    # Logging configuration
+        |── tests/
+        |   └── api_tests/
+        |   └── unit_tests/
         └── migrations/    # Alembic migrations
             └── versions/
 ```
@@ -105,7 +108,7 @@ After generation, run the backend in your new project:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn api.main:app --reload
+uvicorn api.main:app --reload ~or~ python -m apiSync/apiAsync.main
 ```
 
 ---
